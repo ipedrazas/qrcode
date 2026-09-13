@@ -25,12 +25,12 @@ func TestLoadConfigDefaults(t *testing.T) {
 func TestLoadConfigOverrides(t *testing.T) {
 	t.Parallel()
 	cfg, err := loadConfig(env(map[string]string{
-		"PORT": "9000", "RATE_LIMIT_RPS": "0.5", "RATE_LIMIT_BURST": "3", "MAX_URL_LEN": "512", "LOG_LEVEL": "debug",
+		"PORT": "9000", "RATE_LIMIT_RPS": "0.5", "RATE_LIMIT_BURST": "3", "MAX_URL_LEN": "512", "LOG_LEVEL": "debug", "LOG_URLS": "true",
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := config{Port: 9000, RateLimitRPS: 0.5, RateLimitBurst: 3, MaxURLLen: 512, LogLevel: slog.LevelDebug}
+	want := config{Port: 9000, RateLimitRPS: 0.5, RateLimitBurst: 3, MaxURLLen: 512, LogLevel: slog.LevelDebug, LogURLs: true}
 	if cfg != want {
 		t.Fatalf("got %+v, want %+v", cfg, want)
 	}
@@ -47,6 +47,7 @@ func TestLoadConfigInvalid(t *testing.T) {
 		"RATE_LIMIT_BURST": "0",
 		"MAX_URL_LEN":      "2954",
 		"LOG_LEVEL":        "verbose",
+		"LOG_URLS":         "sometimes",
 	}
 	for k, v := range cases {
 		if _, err := loadConfig(env(map[string]string{k: v})); err == nil || !strings.Contains(err.Error(), k) {
