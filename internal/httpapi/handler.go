@@ -47,6 +47,7 @@ func NewHandler(cfg Config) http.Handler {
 	mux.HandleFunc("GET /healthz", serveHealthz)
 	mux.HandleFunc("/qr", serveMethodNotAllowed)
 	mux.HandleFunc("/healthz", serveMethodNotAllowed)
+	registerUI(mux)
 	mux.HandleFunc("/", serveNotFound)
 
 	h := rejectUncleanPaths(mux)
