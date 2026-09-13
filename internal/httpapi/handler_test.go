@@ -103,6 +103,11 @@ func TestErrorResponses(t *testing.T) {
 		{"capacity", http.MethodGet, "/qr", q("url", exampleURL+string(bytes.Repeat([]byte("a"), 2000)), "ec", "H"), 400, CodeCapacityExceeded},
 		{"not found", http.MethodGet, "/qr/", q("url", exampleURL), 404, CodeNotFound},
 		{"root", http.MethodGet, "/", "", 404, CodeNotFound},
+		// Non-canonical paths must not get ServeMux's HTML 307 to the clean path.
+		{"double slash", http.MethodGet, "//qr", q("url", exampleURL), 404, CodeNotFound},
+		{"dot segment", http.MethodGet, "/./qr", q("url", exampleURL), 404, CodeNotFound},
+		{"dot-dot segment", http.MethodGet, "/x/../qr", q("url", exampleURL), 404, CodeNotFound},
+		{"double slash healthz", http.MethodGet, "//healthz", "", 404, CodeNotFound},
 		{"post", http.MethodPost, "/qr", q("url", exampleURL), 405, CodeMethodNotAllowed},
 		{"delete healthz", http.MethodDelete, "/healthz", "", 405, CodeMethodNotAllowed},
 	}
@@ -121,6 +126,9 @@ func TestErrorResponses(t *testing.T) {
 			}
 			if got := w.Header().Get("ETag"); got != "" {
 				t.Errorf("error response carries ETag %q", got)
+			}
+			if got := w.Header().Get("Location"); got != "" {
+				t.Errorf("error response redirects to %q", got)
 			}
 			if tc.status == http.StatusMethodNotAllowed && w.Header().Get("Allow") != "GET, HEAD" {
 				t.Errorf("Allow = %q", w.Header().Get("Allow"))

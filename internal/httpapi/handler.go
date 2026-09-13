@@ -46,7 +46,7 @@ func NewHandler(cfg Config) http.Handler {
 	mux.HandleFunc("/healthz", serveMethodNotAllowed)
 	mux.HandleFunc("/", serveNotFound)
 
-	var h http.Handler = mux
+	h := rejectUncleanPaths(mux)
 	if cfg.Limiter != nil {
 		h = cfg.Limiter.Middleware(h)
 	}
