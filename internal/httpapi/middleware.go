@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"path"
 	"time"
 )
 
@@ -19,6 +20,36 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Content-Security-Policy", "default-src 'none'; sandbox")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// rejectUncleanPaths answers non-canonical paths such as //qr or /a/../qr
+// with a JSON 404. Left alone, ServeMux answers them with a 307 to the
+// cleaned path and an HTML body: the service's only redirect, and one that
+// `curl -o` without -L silently saves in place of the image.
+func rejectUncleanPaths(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if p := r.URL.Path; p != cleanPath(p) {
+			serveNotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// cleanPath mirrors ServeMux's own cleaning: path.Clean, but keeping a
+// trailing slash.
+func cleanPath(p string) string {
+	if p == "" {
+		return "/"
+	}
+	if p[0] != '/' {
+		p = "/" + p
+	}
+	np := path.Clean(p)
+	if p[len(p)-1] == '/' && np != "/" {
+		np += "/"
+	}
+	return np
 }
 
 type logFieldsKey struct{}

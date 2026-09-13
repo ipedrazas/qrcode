@@ -48,7 +48,7 @@ There is no XML declaration, DOCTYPE, title, comment or ID. The URL appears only
 | 400 | `url_too_long` | longer than `MAX_URL_LEN` bytes |
 | 400 | `capacity_exceeded` | the URL does not fit in a version 40 QR code at the requested `ec`; the message suggests the lower levels that would fit |
 | 400 | `invalid_ec`, `invalid_margin`, `invalid_color` | bad value for that parameter (`param` says which) |
-| 404 | `not_found` | unknown path |
+| 404 | `not_found` | unknown or non-canonical path (e.g. `//qr`, `/a/../qr`); the service never redirects |
 | 405 | `method_not_allowed` | anything but `GET`/`HEAD` |
 | 429 | `rate_limited` | per-client rate limit exceeded; see `Retry-After` |
 | 500 | `internal_error` | a bug; details are logged, never returned |
