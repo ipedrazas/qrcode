@@ -1,0 +1,55 @@
+version: "3"
+
+vars:
+  BIN: bin/qrsvc
+  IMAGE: '{{.IMAGE | default "qrsvc:dev"}}'
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  test:
+    desc: Run all tests with the race detector
+    cmds:
+      - go test -race -count=1 ./...
+
+  fuzz:
+    desc: Fuzz the url parameter (override duration with FUZZTIME=5m)
+    vars:
+      FUZZTIME: '{{.FUZZTIME | default "30s"}}'
+    cmds:
+      - go test ./internal/httpapi -run '^$' -fuzz '^FuzzURLParam$' -fuzztime {{.FUZZTIME}}
+
+  golden:
+    desc: Regenerate SVG golden files (then bump qr.FormatVersion)
+    cmds:
+      - go test ./internal/qr -run '^TestGolden$' -count=1 -update
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  build:
+    desc: Build a static binary into bin/
+    env:
+      CGO_ENABLED: "0"
+    cmds:
+      - go build -trimpath -ldflags="-s -w" -o {{.BIN}} ./cmd/qrsvc
+
+  run:
+    desc: Run the service locally on $PORT (default 8080)
+    cmds:
+      - go run ./cmd/qrsvc
+
+  docker:
+    desc: Build the container image (override tag with IMAGE=...)
+    cmds:
+      - docker build -t {{.IMAGE}} .
+
+  docker:run:
+    desc: "Run the image the way production should: read-only root, no capabilities"
+    deps: [docker]
+    cmds:
+      - docker run --rm -p 8080:8080 --read-only --cap-drop=ALL --security-opt=no-new-privileges {{.IMAGE}}
