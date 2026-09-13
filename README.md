@@ -151,6 +151,33 @@ securityContext:
 
 Tagging `v*` builds and pushes a multi-arch (`linux/amd64`, `linux/arm64`) image to `ghcr.io/<owner>/<repo>`.
 
+### Seeing which URLs were processed
+
+With `LOG_URLS=true` (e.g. `docker run -e LOG_URLS=true …`), each successful `/qr` request is logged with its URL. To list them, most requested first:
+
+```sh
+docker logs <container> 2>/dev/null \
+  | jq -rR 'fromjson? | select(.msg=="request" and .url) | .url' \
+  | sort | uniq -c | sort -rn
+```
+
+`-R` with `fromjson?` skips any line that isn't JSON. `2>/dev/null` drops stderr, since the JSON logs go to stdout. Some variations:
+
+```sh
+# Only codes actually generated, leaving out 304 cache hits
+docker logs <container> 2>/dev/null \
+  | jq -rR 'fromjson? | select(.msg=="request" and .url and .status==200) | .url' \
+  | sort | uniq -c | sort -rn
+
+# Only the last 24 hours: add --since
+docker logs --since 24h <container> 2>/dev/null | jq -rR 'fromjson? | select(.url) | .url'
+
+# Watch URLs as they arrive
+docker logs -f <container> 2>/dev/null | jq -rR 'fromjson? | select(.url) | .url'
+```
+
+Without `LOG_URLS` you can still count requests and distinct URLs by grouping on `.url_sha256` instead of `.url`; you just can't see what the URLs were. `task docker:run` starts the container with `--rm`, so its logs go when it stops. To keep a history, run without `--rm` or ship the logs to a collector.
+
 ## Threat model
 
 ### Why static-only, and why there is no redirect endpoint
