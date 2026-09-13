@@ -57,6 +57,7 @@ func run() error {
 			Logger:    logger,
 			MaxURLLen: cfg.MaxURLLen,
 			Limiter:   limiter,
+			LogURLs:   cfg.LogURLs,
 		}),
 		ReadHeaderTimeout: readHeaderTimeout,
 		ReadTimeout:       readTimeout,
@@ -76,6 +77,7 @@ func run() error {
 			slog.Float64("rate_limit_rps", cfg.RateLimitRPS),
 			slog.Int("rate_limit_burst", cfg.RateLimitBurst),
 			slog.Int("max_url_len", cfg.MaxURLLen),
+			slog.Bool("log_urls", cfg.LogURLs),
 		)
 		serveErr <- srv.ListenAndServe()
 	}()

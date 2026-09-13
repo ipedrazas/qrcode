@@ -117,6 +117,7 @@ Environment variables only. All are optional.
 | `RATE_LIMIT_BURST` | `20` | Bucket size per client. |
 | `MAX_URL_LEN` | `2048` | Maximum `url` length in bytes, `1`–`2953`. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. Logs are JSON on stdout. |
+| `LOG_URLS` | `false` | `true` adds the full URL to each successful `/qr` log line as `url`. See the threat model before enabling. |
 
 Invalid values stop the service at startup with a message naming every bad variable.
 
@@ -175,7 +176,9 @@ The URL is a string to encode, nothing more. Fetching it — to validate that it
 
 - **No XSS through the SVG.** SVG served from our origin is an active document, so interpolating user text into it would be stored XSS. The renderer writes only integers and colours it has formatted itself; the URL affects which modules are dark and nothing else. Colours are parsed into bytes and re-emitted, never copied from the query. Every response also carries `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; sandbox`. The fuzz tests check every successful response against a regular expression that admits only that fixed structure.
 - **Only `http`/`https`.** Other schemes, including `javascript:`, `data:`, `file:`, `intent:` and scheme-relative input, are rejected. What a scanner does with a `javascript:` URL varies by app, and none of the answers is good.
-- **URLs are not logged.** They are user data and often carry tokens (password resets, magic links, signed URLs). Logs record a 12-hex-digit SHA-256 prefix (`url_sha256`) and the byte length (`url_len`), which is enough to correlate reports without recording the URL. Error messages never echo the URL.
+- **URLs are not logged by default.** They are user data and often carry tokens (password resets, magic links, signed URLs). Logs record a 12-hex-digit SHA-256 prefix (`url_sha256`) and the byte length (`url_len`), which is enough to count requests and correlate reports without recording the URL. Error messages never echo the URL.
+
+  Setting `LOG_URLS=true` also logs the full URL of every request that passes validation; rejected input is never logged. Only enable it if you are prepared to treat your logs as user data, with access control, retention limits and redaction to match, because any token in a submitted URL ends up in them.
 - **Rate limiting.** A token bucket per client, keyed by IPv4 address or IPv6 `/64`, answers `429` with `Retry-After`. Idle buckets are forgotten, so memory is bounded by the number of recently active clients. The key is the TCP peer address; `X-Forwarded-For` is ignored because clients can forge it. **Behind a reverse proxy or load balancer, every request appears to come from the proxy.** Either rate limit at the proxy and set `RATE_LIMIT_RPS=0` here, or raise the limits accordingly.
 - **Out of scope:** the service does not judge destinations. It will encode any syntactically valid `http(s)` URL, including a malicious one, exactly as a pen and paper would. Deciding which URLs your organisation prints is a policy question for whoever calls this service.
 

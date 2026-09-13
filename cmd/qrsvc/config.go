@@ -17,6 +17,7 @@ type config struct {
 	RateLimitBurst int
 	MaxURLLen      int
 	LogLevel       slog.Level
+	LogURLs        bool
 }
 
 // loadConfig reads configuration from the environment. Every variable is
@@ -69,6 +70,14 @@ func loadConfig(getenv func(string) string) (config, error) {
 	if v := getenv("LOG_LEVEL"); v != "" {
 		if err := cfg.LogLevel.UnmarshalText([]byte(v)); err != nil {
 			errs = append(errs, fmt.Errorf("LOG_LEVEL must be one of debug, info, warn or error, got %q", v))
+		}
+	}
+	if v := getenv("LOG_URLS"); v != "" {
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("LOG_URLS must be true or false, got %q", v))
+		} else {
+			cfg.LogURLs = b
 		}
 	}
 	return cfg, errors.Join(errs...)

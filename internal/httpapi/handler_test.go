@@ -230,6 +230,25 @@ func TestLogsNeverContainURL(t *testing.T) {
 	}
 }
 
+func TestLogURLsOptIn(t *testing.T) {
+	t.Parallel()
+	var logs bytes.Buffer
+	h := newHandler(t, Config{LogURLs: true, Logger: slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))})
+
+	const valid = "https://example.com/menu?table=12"
+	serve(h, http.MethodGet, "/qr", q("url", valid))
+	// Rejected input is never logged, even with LogURLs on.
+	serve(h, http.MethodGet, "/qr", q("url", "ftp://example.com/?token=tok_5up3r53cr3t"))
+
+	out := logs.String()
+	if !bytes.Contains(logs.Bytes(), []byte(`"url":"`+valid+`"`)) {
+		t.Errorf("logs lack the valid URL:\n%s", out)
+	}
+	if bytes.Contains(logs.Bytes(), []byte("tok_5up3r53cr3t")) {
+		t.Errorf("logs contain a rejected URL:\n%s", out)
+	}
+}
+
 func TestRateLimiting(t *testing.T) {
 	t.Parallel()
 	rl := NewRateLimiter(0.5, 2)

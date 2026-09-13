@@ -25,6 +25,9 @@ type Config struct {
 	MaxURLLen int
 	// Limiter, if non-nil, rate limits every route except /healthz.
 	Limiter *RateLimiter
+	// LogURLs adds the full, validated URL to the access log. Off by default:
+	// URLs are user data and often carry tokens in their query strings.
+	LogURLs bool
 }
 
 const cacheControlImmutable = "public, max-age=31536000, immutable"
@@ -37,7 +40,7 @@ func NewHandler(cfg Config) http.Handler {
 	if cfg.MaxURLLen <= 0 {
 		cfg.MaxURLLen = DefaultMaxURLLen
 	}
-	a := &api{encoder: cfg.Encoder, maxURLLen: cfg.MaxURLLen}
+	a := &api{encoder: cfg.Encoder, maxURLLen: cfg.MaxURLLen, logURLs: cfg.LogURLs}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /qr", a.serveQR)
@@ -58,6 +61,7 @@ func NewHandler(cfg Config) http.Handler {
 type api struct {
 	encoder   qr.Encoder
 	maxURLLen int
+	logURLs   bool
 }
 
 func (a *api) serveQR(w http.ResponseWriter, r *http.Request) {
@@ -71,6 +75,9 @@ func (a *api) serveQR(w http.ResponseWriter, r *http.Request) {
 		slog.Int("url_len", len(p.URL)),
 		slog.String("ec", p.EC.String()),
 	)
+	if a.logURLs {
+		addLogAttrs(r, slog.String("url", p.URL))
+	}
 
 	// The response is a pure function of p, so a matching tag means the
 	// client already has exactly these bytes; skip encoding altogether.
