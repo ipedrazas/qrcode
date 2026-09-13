@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>QR code generator</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32">
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<main>
+  <h1>QR code generator</h1>
+  <p class="lede">Type a link and get a static QR code. The link is encoded straight into the image. Nothing is stored, shortened or redirected.</p>
+
+  <form id="form" action="qr" method="get">
+    <label for="url">URL</label>
+    <div class="row">
+      <input id="url" name="url" type="url" required placeholder="https://example.com/" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus>
+      <button type="submit">Generate</button>
+    </div>
+
+    <details>
+      <summary>Options</summary>
+      <div class="options">
+        <label>Error correction
+          <select id="ec" name="ec">
+            <option value="L">Low (7%)</option>
+            <option value="M" selected>Medium (15%)</option>
+            <option value="Q">Quartile (25%)</option>
+            <option value="H">High (30%)</option>
+          </select>
+        </label>
+        <label>Margin
+          <input id="margin" name="margin" type="number" min="4" max="16" value="4">
+        </label>
+        <label>Foreground
+          <input id="fg" name="fg" type="color" value="#000000">
+        </label>
+        <label>Background
+          <input id="bg" name="bg" type="color" value="#ffffff">
+        </label>
+        <label class="check">
+          <input id="transparent" type="checkbox"> Transparent background
+        </label>
+      </div>
+    </details>
+  </form>
+
+  <p id="error" class="error" role="alert" hidden></p>
+
+  <section id="result" class="result" hidden>
+    <div id="frame" class="frame"><img id="qr" alt=""></div>
+    <a id="download" class="download" download="qr-code.svg">Download SVG</a>
+  </section>
+
+  <p class="note">Also available as an API: <code>GET /qr?url=…</code></p>
+</main>
+</body>
+</html>

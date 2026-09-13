@@ -1,0 +1,186 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --text: #1b1b1b;
+  --muted: #5d6166;
+  --border: #d6d6d1;
+  --accent: #1d4ed8;
+  --accent-text: #ffffff;
+  --error-bg: #fdecea;
+  --error-text: #9f1f17;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131313;
+    --surface: #1d1d1d;
+    --text: #ececec;
+    --muted: #a3a3a3;
+    --border: #363636;
+    --accent: #6d97f5;
+    --accent-text: #0c0c0c;
+    --error-bg: #3b1714;
+    --error-text: #ffb4ab;
+  }
+}
+
+[hidden] { display: none !important; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 3rem 1rem 4rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin: 0 0 1.75rem;
+  color: var(--muted);
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input, select, button { font: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+#url {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+button {
+  padding: 0.6rem 1.1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+details { margin-top: 1rem; }
+
+summary {
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 500;
+}
+
+.options .check { justify-content: flex-start; }
+
+.options select,
+.options input[type="number"] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.options input[type="number"] { width: 5rem; }
+
+.options input[type="color"] {
+  width: 3rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+}
+
+.options input:disabled { opacity: 0.4; }
+
+.error {
+  margin: 1.25rem 0 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.frame {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* A checkerboard shows which parts of a transparent code are see-through. */
+.frame.transparent {
+  background: repeating-conic-gradient(#cfcfcf 0 25%, #ffffff 0 50%) 0 0 / 16px 16px;
+}
+
+#qr {
+  display: block;
+  width: min(18rem, 70vw);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.download {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.note {
+  margin-top: 3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

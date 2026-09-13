@@ -70,6 +70,9 @@ func TestSecurityHeadersOnEveryResponse(t *testing.T) {
 		{"method not allowed", http.MethodPost, "/qr", "", nil, http.StatusMethodNotAllowed},
 		{"healthz", http.MethodGet, "/healthz", "", nil, http.StatusOK},
 		{"rate limited", http.MethodGet, "/qr", q("url", exampleURL), []reqOpt{withRemote("192.0.2.10:1")}, http.StatusTooManyRequests},
+		{"ui page", http.MethodGet, "/", "", nil, http.StatusOK},
+		{"ui asset", http.MethodGet, "/app.js", "", nil, http.StatusOK},
+		{"favicon", http.MethodGet, "/favicon.svg", "", nil, http.StatusOK},
 	}
 	for i, tc := range cases {
 		opts := append([]reqOpt{withRemote("198.51.100." + strconv.Itoa(i+1) + ":1")}, tc.opts...)
@@ -80,7 +83,12 @@ func TestSecurityHeadersOnEveryResponse(t *testing.T) {
 		if got := w.Header().Get("X-Content-Type-Options"); got != "nosniff" {
 			t.Errorf("%s: X-Content-Type-Options = %q", tc.name, got)
 		}
-		if got := w.Header().Get("Content-Security-Policy"); got != "default-src 'none'; sandbox" {
+		// Only the UI page itself relaxes the policy, to run its own script.
+		wantCSP := "default-src 'none'; sandbox"
+		if tc.path == "/" {
+			wantCSP = uiPagePolicy
+		}
+		if got := w.Header().Get("Content-Security-Policy"); got != wantCSP {
 			t.Errorf("%s: Content-Security-Policy = %q", tc.name, got)
 		}
 	}
@@ -102,7 +110,10 @@ func TestErrorResponses(t *testing.T) {
 		{"unknown param", http.MethodGet, "/qr", q("url", exampleURL, "size", "9"), 400, CodeUnknownParameter},
 		{"capacity", http.MethodGet, "/qr", q("url", exampleURL+string(bytes.Repeat([]byte("a"), 2000)), "ec", "H"), 400, CodeCapacityExceeded},
 		{"not found", http.MethodGet, "/qr/", q("url", exampleURL), 404, CodeNotFound},
-		{"root", http.MethodGet, "/", "", 404, CodeNotFound},
+		{"index.html", http.MethodGet, "/index.html", "", 404, CodeNotFound},
+		{"ui subpath", http.MethodGet, "/app.js/x", "", 404, CodeNotFound},
+		{"post root", http.MethodPost, "/", "", 405, CodeMethodNotAllowed},
+		{"post favicon", http.MethodPost, "/favicon.ico", "", 405, CodeMethodNotAllowed},
 		// Non-canonical paths must not get ServeMux's HTML 307 to the clean path.
 		{"double slash", http.MethodGet, "//qr", q("url", exampleURL), 404, CodeNotFound},
 		{"dot segment", http.MethodGet, "/./qr", q("url", exampleURL), 404, CodeNotFound},

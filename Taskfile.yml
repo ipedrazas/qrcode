@@ -26,6 +26,11 @@ tasks:
     cmds:
       - go test ./internal/qr -run '^TestGolden$' -count=1 -update
 
+  icons:
+    desc: Regenerate the UI favicons (favicon.svg and favicon.ico) from gen_icons.go
+    cmds:
+      - go generate ./internal/httpapi
+
   lint:
     desc: Run golangci-lint
     cmds:

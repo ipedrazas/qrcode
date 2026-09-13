@@ -1,6 +1,6 @@
 # qrsvc
 
-A small, stateless HTTP service that turns a URL into a **static** QR code, served as SVG.
+A small, stateless HTTP service that turns a URL into a **static** QR code, served as SVG. It also serves a small web page at `/` for making codes by hand.
 
 The URL is encoded directly into the QR matrix. There is no shortener, no redirect endpoint, no database, no analytics and no persistence of any kind. The service never fetches, resolves or follows the URL; it works with all outbound network egress blocked.
 
@@ -65,6 +65,14 @@ Every URL is encoded in byte mode, so the version 40 capacity is exact:
 | H | 1273 |
 
 With the default 2048-byte limit, only `Q` and `H` can hit `capacity_exceeded`.
+
+### `GET /` (web UI)
+
+A single page for making a code by hand. You type a URL (a bare `example.com/x` gets `https://`), optionally set the EC level, margin and colours, and download the SVG. The page calls `GET /qr` like any other client, so it offers nothing the API doesn't, and errors show the API's own message. Without JavaScript the form still works as a plain `GET /qr`.
+
+It is served from files embedded in the binary, at exact paths only: `/`, `/app.js`, `/style.css`, `/favicon.svg` and `/favicon.ico`. There is no file server, so `/index.html` and anything else is a `404`. These files are revalidated on every load (`Cache-Control: no-cache` with a content-hash `ETag`), so a new build shows up immediately.
+
+The browser-tab icon exists twice: `favicon.svg` for current browsers and `favicon.ico` (16 and 32 px) for the rest. Both come from one geometry in `internal/httpapi/gen_icons.go`; regenerate them with `task icons`.
 
 ### `GET /healthz`
 
@@ -201,7 +209,8 @@ The URL is a string to encode, nothing more. Fetching it — to validate that it
 
 ### Other properties
 
-- **No XSS through the SVG.** SVG served from our origin is an active document, so interpolating user text into it would be stored XSS. The renderer writes only integers and colours it has formatted itself; the URL affects which modules are dark and nothing else. Colours are parsed into bytes and re-emitted, never copied from the query. Every response also carries `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; sandbox`. The fuzz tests check every successful response against a regular expression that admits only that fixed structure.
+- **No XSS through the SVG.** SVG served from our origin is an active document, so interpolating user text into it would be stored XSS. The renderer writes only integers and colours it has formatted itself; the URL affects which modules are dark and nothing else. Colours are parsed into bytes and re-emitted, never copied from the query. Every response also carries `X-Content-Type-Options: nosniff` and, except for the UI page, `Content-Security-Policy: default-src 'none'; sandbox`. The fuzz tests check every successful response against a regular expression that admits only that fixed structure.
+- **The UI page gets only the CSP it needs.** `/` is the one response that runs script. Its policy allows only its own script and stylesheet, `fetch` to its own origin, and images from itself or `blob:` (the generated code is shown from a blob of exactly the bytes `/qr` returned). It allows nothing inline and nothing from other origins, and `frame-ancestors 'none'` stops the page being framed. The script writes user and server text only through `textContent`, never as HTML. It keeps the URL out of the page's own address, so it stays out of browser history, and every UI response sends `Referrer-Policy: no-referrer`. Tests check that the page has no inline script, style or event handler that its CSP would silently block.
 - **Only `http`/`https`.** Other schemes, including `javascript:`, `data:`, `file:`, `intent:` and scheme-relative input, are rejected. What a scanner does with a `javascript:` URL varies by app, and none of the answers is good.
 - **URLs are not logged by default.** They are user data and often carry tokens (password resets, magic links, signed URLs). Logs record a 12-hex-digit SHA-256 prefix (`url_sha256`) and the byte length (`url_len`), which is enough to count requests and correlate reports without recording the URL. Error messages never echo the URL.
 
@@ -254,6 +263,7 @@ task lint    # golangci-lint (config in .golangci.yml)
 - **Quiet zone.** For margins 0–16, nothing is dark outside the symbol, and the finder corners sit exactly at the margin.
 - **Fuzzing.** `FuzzURLParam` and `FuzzQuery` require every input to yield either a structurally exact SVG or a well-formed 400, never a panic.
 - **Table tests** cover validation, canonicalization, ETag stability (including a pinned value), conditional requests, headers on every response, rate limiting, log redaction and configuration.
+- **UI.** Every embedded file is served with the right type and revalidates to `304`. Every file the page links to resolves, and every element `app.js` looks up exists in the page. The page has nothing its CSP would block, and both favicons are well-formed.
 
 ## Layout
 
@@ -261,4 +271,5 @@ task lint    # golangci-lint (config in .golangci.yml)
 cmd/qrsvc/          main, configuration, graceful shutdown
 internal/qr/        Encoder interface + go-qr adapter, SVG renderer
 internal/httpapi/   routes, validation/canonicalization, caching, middleware, rate limiting
+internal/httpapi/ui/  web UI (HTML, JS, CSS, favicons), embedded into the binary
 ```
